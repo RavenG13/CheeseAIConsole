@@ -1,9 +1,4 @@
 ﻿using Cheese.Module;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TorchSharp;
 
 namespace ConsoleApp1
@@ -18,20 +13,23 @@ namespace ConsoleApp1
             ResRollOutAI resRollOutAI = new(RollName);
 
             resRollOutAI.to(DeviceType.CUDA);
-            resRollOutAI.adam = new(resRollOutAI.parameters(), 1E-4);
             resRollOutAI.load(RollName + ".dat");
+            resRollOutAI.adam = new(resRollOutAI.parameters(), 1E-4);
 
             AITrainer.rollOutAI = resRollOutAI;
 
             string Train = Console.ReadLine();
-            TrainTime = int.Parse(Train);
+            try { TrainTime = int.Parse(Train); }
+            catch (Exception ex) { TrainTime = 1000; }
+            
+
             for (int i = 0; i < TrainTime; i++)
             {
-                Console.WriteLine(i);
+                Console.WriteLine("start_time="+i);
                 AITrainer.RolloutPlay();
-                
+
             }
         }
     }
-    
+
 }

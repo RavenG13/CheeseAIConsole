@@ -1,8 +1,4 @@
 ﻿using ConsoleApp1;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using TorchSharp;
 using static TorchSharp.torch;
 
@@ -207,8 +203,8 @@ public class MCTS
             Simulate(root, env);
         }
 
-        
-        float[,] ActionProbsArray = new float[Global.SIZE,Global.SIZE];
+
+        float[,] ActionProbsArray = new float[Global.SIZE, Global.SIZE];
         for (int i = 0; i < Global.SIZE; i++)
         {
             for (int j = 0; j < Global.SIZE; j++)
@@ -283,10 +279,10 @@ public class PureRollOutMcts : RollOutMCTS
 
 public class RollOutMCTS : MCTS
 {
-    private readonly int _threads = 4;
+    private readonly int _threads = 2;
     protected readonly int RollOutTimes;
     private readonly nn.Module<Tensor, Tensor> RollAI;
-    public RollOutMCTS(nn.Module<Tensor, Tensor> RollAI, int RollOutTimes = 400) : base(null)
+    public RollOutMCTS(nn.Module<Tensor, Tensor> RollAI, int RollOutTimes = 800) : base(null)
     {
         this.RollAI = RollAI;
         this.RollOutTimes = RollOutTimes;
@@ -326,61 +322,59 @@ public class RollOutMCTS : MCTS
 
     public Tensor GetNextAction(Env env)
     {
+
         Node root = new Node();
         torch.set_grad_enabled(false);
         ExpandLeafNode(root, env);
 
-        for (int i = 0; i < RollOutTimes; i++)
+
+        (Node node, Env env)[] LeafNodes = new (Node, Env)[_threads];
+        for (int j = 0; j < _threads; j++)
         {
-            (Node node, Env env)[] LeafNodes = new (Node, Env)[_threads];
-            ///
-            for (int j = 0; j < _threads; j++)
-            {
-                LeafNodes[j].node = root;
-                LeafNodes[j].env = env.Clone();
-                SelectLeaf(ref LeafNodes[j].node, ref LeafNodes[j].env);
-            }
-            Task<float>[] tasks = new Task<float>[_threads];
-
-            for(int j = 0; j < _threads; j++)
-            {
-                int id = j;
-                tasks[j] = Task.Run(() => RollOut(LeafNodes[id].node, LeafNodes[id].env));
-            }
-
-            while(tasks.Count() > 0)
-            {
-                int n = 0;
-                int j = Task.WaitAny(tasks);
-
-                if (LeafNodes[j].node.VisitCount >= 20 && LeafNodes[j].node.IsLeaf() && LeafNodes[j].env.IsEnd().Item2 == 2)
-                {
-                    ExpandLeafNode(LeafNodes[j].node, LeafNodes[j].env);
-                }
-                
-                LeafNodes[j].node.UpdateRecursive(tasks[j].Result);
-                LeafNodes[j].node = root;
-                LeafNodes[j].env = env.Clone();
-                SelectLeaf(ref LeafNodes[j].node, ref LeafNodes[j].env);
-                tasks[j] = Task.Run(() => RollOut(LeafNodes[j].node, LeafNodes[j].env));
-
-                if (n > RollOutTimes * _threads)
-                {
-                    break;
-                }
-                n++;
-            }
-            /*
-            for (int j = 0; j < _threads; j++)
-            {
-                if (LeafNodes[j].node.VisitCount >= 20 && LeafNodes[j].node.IsLeaf() && LeafNodes[j].env.IsEnd().Item2 == 2)
-                {
-                    ExpandLeafNode(LeafNodes[j].node, LeafNodes[j].env);
-                }
-                LeafNodes[j].node.UpdateRecursive(tasks[j].Result);
-            }
-            */
+            LeafNodes[j].node = root;
+            LeafNodes[j].env = env.Clone();
+            SelectLeaf(ref LeafNodes[j].node, ref LeafNodes[j].env);
         }
+        Task<float>[] tasks = new Task<float>[_threads];
+
+        for (int j = 0; j < _threads; j++)
+        {
+            int id = j;
+            tasks[j] = Task.Run(() => RollOut(LeafNodes[id].node, LeafNodes[id].env));
+        }
+        int n = 0;
+
+        while (tasks.Count() > 0)
+        {
+            int j = Task.WaitAny(tasks);
+
+            if (LeafNodes[j].node.VisitCount >= 20 && LeafNodes[j].node.IsLeaf() && LeafNodes[j].env.IsEnd().Item2 == 2)
+            {
+                ExpandLeafNode(LeafNodes[j].node, LeafNodes[j].env);
+            }
+
+            LeafNodes[j].node.UpdateRecursive(tasks[j].Result);
+            LeafNodes[j].node = root;
+            LeafNodes[j].env = env.Clone();
+            SelectLeaf(ref LeafNodes[j].node, ref LeafNodes[j].env);
+            tasks[j] = Task.Run(() => RollOut(LeafNodes[j].node, LeafNodes[j].env));
+
+            if (n > RollOutTimes * _threads)
+            {
+                break;
+            }
+            n++;
+        }
+        /*
+        for (int j = 0; j < _threads; j++)
+        {
+            if (LeafNodes[j].node.VisitCount >= 20 && LeafNodes[j].node.IsLeaf() && LeafNodes[j].env.IsEnd().Item2 == 2)
+            {
+                ExpandLeafNode(LeafNodes[j].node, LeafNodes[j].env);
+            }
+            LeafNodes[j].node.UpdateRecursive(tasks[j].Result);
+        }
+        */
 
         float[,] ActionProbsArray = new float[Global.SIZE, Global.SIZE];
         for (int i = 0; i < Global.SIZE; i++)

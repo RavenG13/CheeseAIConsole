@@ -1,5 +1,6 @@
 using Cheese.Module;
 using ConsoleApp1;
+using System.Diagnostics;
 using System.Xml.Linq;
 using TorchSharp;
 using TorchSharp.Modules;
@@ -135,27 +136,31 @@ public static class AITrainer
     {
         int n = 0;
         Env env = new Env();
-        //Stopwatch sw = Stopwatch.StartNew();
-        for (int i = 0; i < SIZE * SIZE; i++)
+        Stopwatch stopwatch = Stopwatch.StartNew();
+
+        for (n = 0; n < SIZE * SIZE; n++)
         {
             if (env.IsEnd().Item2 != 2) break;
 
             Console.WriteLine(n.ToString() + " ");
-            n++;
 
             AITrainer.rollOutAI.eval();
             RollOutMCTS mCTS = new(AITrainer.rollOutAI);
             Tensor ActProbs = mCTS.GetNextAction(env);
             env.TensorToLearn = ActProbs.detach().clone();
 
-            using Tensor Where = argwhere(ActProbs == ActProbs.max()).type(ScalarType.Int32);
+            Tensor Where = argwhere(ActProbs == ActProbs.max()).type(ScalarType.Int32);
 
             int[] act = Where[TensorIndex.Tensor(torch.randperm(Where.size(0))[0])].data<int>().ToArray();
-
-
+            if(env.ToGameState().HasPiece(act[0], act[1]))
+            {
+                throw new Exception("wrong place");
+            }
             env = env.Step(act);
         }
+        stopwatch.Stop();
 
+        Console.WriteLine("Time/per step=" + (stopwatch.ElapsedMilliseconds / n) + "ms");
         Console.WriteLine("\n\nfinish\n");
         Console.WriteLine("\nWinner=" + env.IsEnd().Item2.ToString());
         DataLoader.RollTrain(env);
