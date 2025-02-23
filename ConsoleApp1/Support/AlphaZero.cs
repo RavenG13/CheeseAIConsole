@@ -102,32 +102,38 @@ public static class AITrainer
     {
         int n = 0;
         Env env = new Env();
-        
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        Node node = new();
 
         for (int i = 0; i < SIZE*SIZE; i++)
         {
             if (env.IsEnd().Item2 != 2) break;
 
-            Console.WriteLine(n.ToString() + " ");
+            Console.Write(n.ToString() + " ");
             n++;
 
-            Node node = new();
+            
             MCTS mCTS = new MCTS(AITrainer.alphaAI);
             Tensor ActProbs = mCTS.GetNextAction(env, node);
             env.TensorToLearn = ActProbs.detach().clone();
 
-            using Tensor Where = argwhere(ActProbs == ActProbs.max()).type(ScalarType.Int32);
-
+            Tensor Where = argwhere(ActProbs == ActProbs.max()).type(ScalarType.Int32);
             int[] act = Where[TensorIndex.Tensor(torch.randperm(Where.size(0))[0])].data<int>().ToArray();
 
-
+            if (env.ToGameState().HasPiece(act[0], act[1]))
+            {
+                throw new Exception("wrong place");
+            }
+            Console.WriteLine(act[0] + "," + act[1]);
             env = env.Step(act);
-            
+            node = node.step(act);
         }
-        
-
         //env.TensorToLearn = env.Parent.TensorToLearn.clone();
-
+        stopwatch.Stop();
+        Console.WriteLine("\nfinish\n");
+        Console.Write(env.ShowEnv());
+        Console.Write("Time/per step=" + (stopwatch.ElapsedMilliseconds / n) + "ms");
+        Console.WriteLine("\nWinner=" + env.IsEnd().Item2.ToString());
         DataLoader.Train(env);
         
         GC.Collect();
@@ -160,9 +166,9 @@ public static class AITrainer
         }
         stopwatch.Stop();
 
+        Console.Write("\n\nfinish\n");
         Console.WriteLine("Time/per step=" + (stopwatch.ElapsedMilliseconds / n) + "ms");
-        Console.WriteLine("\n\nfinish\n");
-        Console.WriteLine("\nWinner=" + env.IsEnd().Item2.ToString());
+        Console.WriteLine("Winner=" + env.IsEnd().Item2.ToString());
         DataLoader.RollTrain(env);
         GC.Collect();
     }
@@ -236,13 +242,17 @@ public class DataLoader
     {
         List<float> Loss1List = new();
         List<float> Loss2List = new();
+
+        float ValueNetLoss = 0;
         float entropy = 0;
+
         int Winner = env.IsEnd().Item2;
-        if (Winner == 2) { return; }
+        int Count = 0;
         AITrainer.alphaAI.train();
         torch.set_grad_enabled(true);
 
         Env newenv = env;
+
 
 
         while (newenv.Parent != null)
@@ -261,12 +271,17 @@ public class DataLoader
             //-torch.sum(Targets * OutPut, 1).mean();
 
             float target = Winner == newenv.Player ? 1f : (Winner == 2) ? -0.0f : -1f;
-            Tensor Loss2 = torch.nn.functional.mse_loss(Values, target);
+
+            Tensor Target = target * torch.ones(Values.shape);
+            Tensor Loss2 = torch.nn.functional.mse_loss(Values, Target);
 
             Tensor TotalLoss = Loss1 + Loss2;
             Loss1List.Add(Loss1.item<float>());
-            Loss2List.Add(Loss2.item<float>());
 
+            if (Count <= 20)
+            {
+                Loss2List.Add(Loss2.item<float>());
+            }
             AITrainer.alphaAI.optimizer.zero_grad();
             TotalLoss.backward();
             //float Grad = AlphaGo.alphaAI.named_parameters().ToArray()[16].parameter.grad.abs().mean().item<float>();
@@ -275,11 +290,13 @@ public class DataLoader
             entropy += torch.sum(OutPut * OutPut.exp(), 1).mean().item<float>(); ;
 
             newenv = newenv.Parent;
+            Count++;
         }
 
         string Loss = (Loss1List.Sum() / Loss1List.LongCount()).ToString() + " + " + (Loss2List.Sum() / Loss2List.Count()).ToString();
-
         Loss += "\n" + (-entropy / Loss1List.LongCount()).ToString();
-        Console.WriteLine(Loss);
+        Console.WriteLine(Loss+"\n");
+        
+        AITrainer.alphaAI.save("./ModuleSave/1.dat");
     }
 }

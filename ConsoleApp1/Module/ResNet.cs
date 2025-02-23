@@ -65,7 +65,7 @@ namespace Cheese.Module
             var _value = new List<(string, Module<Tensor, Tensor>)>();
             _value.Add(("ValueConv1", new ConvBlock("ValueConv1", 128, 2, 1)));
             _value.Add(("Flutten", nn.Flatten(1)));
-            _value.Add(("lin1", nn.Linear(162,128)));
+            _value.Add(("lin1", nn.Linear(2 * MatchSize * MatchSize, 128)));
             _value.Add(("relu", nn.ReLU()));
             _value.Add(("lin2", nn.Linear(128, 1)));
             _value.Add(("tanh", nn.Tanh()));

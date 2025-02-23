@@ -251,6 +251,30 @@ public class Env
         string i = gameState.Show();
         return i;
     }
+    public string ShowEnv()
+    {
+        string output = "GameEnv\n";
+        for (int i = 0; i < Global.SIZE; i++)
+        {
+            for(int j = 0;j<Global.SIZE;j++)
+            {
+                if (gameState.HasPiece(0, new int[] { i, j }))
+                {
+                    output += "0";
+                }
+                else if(gameState.HasPiece(1, new int[] { i, j }))
+                {
+                    output += "x";
+                }
+                else
+                {
+                    output += "-";
+                }
+            }
+            output += "\n";
+        }
+        return output;
+    }
     public Env GetRoot()
     {
         Env root = this;
@@ -279,10 +303,10 @@ public class PureRollOutMcts : RollOutMCTS
 
 public class RollOutMCTS : MCTS
 {
-    private readonly int _threads = 2;
+    private readonly int _threads = 4;
     protected readonly int RollOutTimes;
     private readonly nn.Module<Tensor, Tensor> RollAI;
-    public RollOutMCTS(nn.Module<Tensor, Tensor> RollAI, int RollOutTimes = 800) : base(null)
+    public RollOutMCTS(nn.Module<Tensor, Tensor> RollAI, int RollOutTimes = 600) : base(null)
     {
         this.RollAI = RollAI;
         this.RollOutTimes = RollOutTimes;
