@@ -57,7 +57,7 @@ public class MCTS
     static float _pbCBase = 1.1f;
 
     private nn.Module<Tensor, (Tensor, Tensor)> module;
-
+    private const int NumSimulations = 800;
     public MCTS(nn.Module<Tensor, (Tensor, Tensor)> module)
     {
         this.module = module;
@@ -194,7 +194,7 @@ public class MCTS
         AITrainer.alphaAI.eval();
 
         torch.set_grad_enabled(false);
-        const int NumSimulations = 400;
+        
         int[] action = new int[2];
 
         if (root.Children is null) ExpandLeafNode(root, env);

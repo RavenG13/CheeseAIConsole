@@ -29,7 +29,7 @@ namespace ConsoleApp1
 
             for (int i = 0; i < TrainTime; i++)
             {
-                Console.WriteLine("start_time="+i);
+                Console.WriteLine("study_time="+i);
                 AITrainer.SelfPlay();
 
             }

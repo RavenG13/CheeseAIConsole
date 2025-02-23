@@ -63,21 +63,22 @@ namespace Cheese.Module
             _Core = nn.Sequential(_core);
 
             var _value = new List<(string, Module<Tensor, Tensor>)>();
-            _value.Add(("ValueConv1", new ConvBlock("ValueConv1", 128, 2, 1)));
+            _value.Add(("ValueConv1", new ConvBlock("ValueConv1", 128, 3, 1)));
             _value.Add(("Flutten", nn.Flatten(1)));
-            _value.Add(("lin1", nn.Linear(2 * MatchSize * MatchSize, 128)));
+            _value.Add(("lin1", nn.Linear(3 * MatchSize * MatchSize, 256)));
             _value.Add(("relu", nn.ReLU()));
-            _value.Add(("lin2", nn.Linear(128, 1)));
+            _value.Add(("lin2", nn.Linear(256, 128)));
+            _value.Add(("relu", nn.ReLU()));
+            _value.Add(("lin3", nn.Linear(128, 1)));
             _value.Add(("tanh", nn.Tanh()));
             _ValueHead = nn.Sequential(_value);
 
             var _policy = new List<(string, Module<Tensor, Tensor>)>();
-            _policy.Add(("ConvBlock", new ConvBlock("ConvBlock", 128, 3, 1)));
+            _policy.Add(("ConvBlock", new ConvBlock("ConvBlock", 128, 4, 1)));
             _policy.Add(("Flutten", nn.Flatten(1)));
-            _policy.Add(("Linear1", nn.Linear(3 * MatchSize * MatchSize, 128)));
+            _policy.Add(("Linear1", nn.Linear(4 * MatchSize * MatchSize, 450)));
             _policy.Add(("relu", nn.ReLU()));
-            _policy.Add(("Linear2", nn.Linear(128, MatchSize * MatchSize)));
-            _policy.Add(("Out", nn.LogSoftmax(1)));
+            _policy.Add(("Linear3", nn.Linear(450, MatchSize * MatchSize)));
             _PolicyHead = nn.Sequential(_policy);
 
             RegisterComponents();
@@ -86,7 +87,8 @@ namespace Cheese.Module
         public override (Tensor, Tensor) forward(Tensor input)
         {
             using var x = _Core.forward(input.cuda());
-            return (_PolicyHead.forward(x).cpu(), _ValueHead.forward(x).cpu());
+            using var policy = _PolicyHead.forward(x);
+            return (nn.functional.log_softmax(policy, 1).cpu(), _ValueHead.forward(x).cpu());
         }
     }
 
