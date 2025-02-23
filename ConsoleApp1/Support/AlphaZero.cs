@@ -108,10 +108,8 @@ public static class AITrainer
         for (int i = 0; i < SIZE*SIZE; i++)
         {
             if (env.IsEnd().Item2 != 2) break;
-
             Console.Write(n.ToString() + " ");
             n++;
-
             
             MCTS mCTS = new MCTS(AITrainer.alphaAI);
             Tensor ActProbs = mCTS.GetNextAction(env, node);

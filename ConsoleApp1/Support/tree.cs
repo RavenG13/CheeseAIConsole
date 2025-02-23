@@ -16,7 +16,7 @@ public class Node
     }
 
 
-    public Node(Node parent = null, double priorP = 1.0)
+    public Node(Node parent = null, double priorP = 1.3)
     {
         Parent = parent;
         PriorP = priorP;

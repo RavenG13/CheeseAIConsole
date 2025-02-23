@@ -77,7 +77,6 @@ namespace Cheese.Module
             _policy.Add(("Linear1", nn.Linear(3 * MatchSize * MatchSize, 128)));
             _policy.Add(("relu", nn.ReLU()));
             _policy.Add(("Linear2", nn.Linear(128, MatchSize * MatchSize)));
-            _policy.Add(("relu", nn.ReLU()));
             _policy.Add(("Out", nn.LogSoftmax(1)));
             _PolicyHead = nn.Sequential(_policy);
 
