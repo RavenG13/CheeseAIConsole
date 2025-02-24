@@ -295,6 +295,6 @@ public class DataLoader
         Loss += "\n" + (-entropy / Loss1List.LongCount()).ToString();
         Console.WriteLine(Loss+"\n");
         
-        AITrainer.alphaAI.save("./ModuleSave/1.dat");
+        //AITrainer.alphaAI.save("./ModuleSave/1.dat");
     }
 }

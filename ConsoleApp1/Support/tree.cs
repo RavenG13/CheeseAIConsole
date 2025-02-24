@@ -57,7 +57,7 @@ public class MCTS
     static float _pbCBase = 1.1f;
 
     private nn.Module<Tensor, (Tensor, Tensor)> module;
-    private const int NumSimulations = 800;
+    private const int NumSimulations = 600;
     public MCTS(nn.Module<Tensor, (Tensor, Tensor)> module)
     {
         this.module = module;
@@ -198,9 +198,16 @@ public class MCTS
         int[] action = new int[2];
 
         if (root.Children is null) ExpandLeafNode(root, env);
+
+        Task[] tasks = new Task[4];
+        tasks[0] = Task.Run(() => Simulate(root, env));
+        tasks[1] = Task.Run(() => Simulate(root, env));
+        tasks[2] = Task.Run(() => Simulate(root, env));
+        tasks[3] = Task.Run(() => Simulate(root, env));
         for (int i = root.VisitCount; i < NumSimulations; i++)
         {
-            Simulate(root, env);
+            int x = Task.WaitAny(tasks);
+            tasks[x] = Task.Run(() => Simulate(root, env));
         }
 
 
