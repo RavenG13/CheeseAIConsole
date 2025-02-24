@@ -5,6 +5,7 @@ using static TorchSharp.torch;
 
 public class Node
 {
+    public Mutex mutex {  get; private set; } = new Mutex();
     public Node Parent { get; private set; }
     public float ThreadLoss { get; set; }
     public Node[,] Children;
@@ -126,7 +127,10 @@ public class MCTS
         Node root = node;
         Node Leaf = node;
         Env envCopy = env.Clone();
-        SelectLeaf(ref Leaf, ref envCopy);
+        Mutex mutex = null;
+
+        SelectLeaf(ref Leaf, ref envCopy,ref mutex);
+
         (int[] pos, byte Winner) = envCopy.IsEnd();
         bool IsDone = Winner != 2;
         float LeafValue;
@@ -136,18 +140,35 @@ public class MCTS
         {
             LeafValue = envCopy.Player == envCopy.IsEnd().Item2 ? 1 : -1;
         }
+        mutex.ReleaseMutex();
+        //Console.WriteLine(Leaf.GetHashCode());
+        //Console.WriteLine(Thread.GetCurrentProcessorId());
         Leaf.UpdateRecursive(-LeafValue);
+
     }
 
-    protected static void SelectLeaf(ref Node Leaf, ref Env envCopy)
+    protected static void SelectLeaf(ref Node Leaf, ref Env envCopy,ref Mutex mutex)
     {
+        Node node;
+        Leaf.mutex.WaitOne();
+
         while (!Leaf.IsLeaf())
         {
-            (int[] Act, Leaf) = SelectChild(Leaf);
-            if (Act is null) break;
+            (int[] Act, node) = SelectChild(Leaf);
+            node.mutex.WaitOne();
+
+            if (Act is null) {
+                Leaf = node;
+                mutex = node.mutex;
+                break; 
+            }
+
             Leaf.ThreadLoss = -10;
             envCopy = envCopy.Step(Act);
+            Leaf.mutex.ReleaseMutex();
+            Leaf = node;
         }
+        mutex = Leaf.mutex;
     }
 
     /// <summary>
@@ -365,7 +386,10 @@ public class RollOutMCTS : MCTS
         {
             LeafNodes[j].node = root;
             LeafNodes[j].env = env.Clone();
-            SelectLeaf(ref LeafNodes[j].node, ref LeafNodes[j].env);
+
+            Mutex mutex = new Mutex();
+            SelectLeaf(ref LeafNodes[j].node, ref LeafNodes[j].env,ref mutex);
+            mutex.ReleaseMutex();
         }
         Task<float>[] tasks = new Task<float>[_threads];
 
@@ -388,7 +412,11 @@ public class RollOutMCTS : MCTS
             LeafNodes[j].node.UpdateRecursive(tasks[j].Result);
             LeafNodes[j].node = root;
             LeafNodes[j].env = env.Clone();
-            SelectLeaf(ref LeafNodes[j].node, ref LeafNodes[j].env);
+
+            Mutex mutex2 = new Mutex(); 
+            SelectLeaf(ref LeafNodes[j].node, ref LeafNodes[j].env,ref mutex2);
+            mutex2.ReleaseMutex();
+
             tasks[j] = Task.Run(() => RollOut(LeafNodes[j].node, LeafNodes[j].env));
 
             if (n > RollOutTimes * _threads)
