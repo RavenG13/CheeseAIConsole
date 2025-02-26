@@ -17,6 +17,7 @@ namespace ConsoleApp1.Support
             }
 
             OutPut outPut = new();
+            
             outPut.mutex = new Mutex();
             outPut.mutex.WaitOne();
             outPutsBuffer.Enqueue(outPut);
@@ -32,13 +33,15 @@ namespace ConsoleApp1.Support
                 tensorsBuffer.Clear();
             }
 
-            (Tensor output, Tensor value) = (torch.pow(input,2),torch.ones(1));
+            (Tensor output, Tensor value) = (torch.pow(input,2),torch.ones(new long[] {3,1}));
+            int index = 0;
             while (outPutsBuffer.Count != 0)
             {
                 if (outPutsBuffer.TryDequeue(out OutPut result))
                 {
-                    result.Output = (output, value);
+                    result.Output = (output[index], value[index]);
                     result.mutex.ReleaseMutex();
+                    index++;
                 }
             }
 
@@ -46,7 +49,7 @@ namespace ConsoleApp1.Support
 
     }
 
-    struct OutPut
+    public class OutPut
     {
         public Mutex mutex;
         public (Tensor, Tensor) Output;
