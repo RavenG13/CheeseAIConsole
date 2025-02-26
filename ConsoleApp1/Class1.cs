@@ -19,7 +19,7 @@ namespace ConsoleApp1
             AITrainer.alphaAI = new("", 15, 7);
             AITrainer.alphaAI.to(DeviceType.CUDA);
             AITrainer.alphaAI.load("./ModuleSave/1.dat");
-            AITrainer.alphaAI.optimizer = new(AITrainer.alphaAI.parameters(), 1E-4);
+            AITrainer.alphaAI.optimizer = new(AITrainer.alphaAI.parameters(), 5E-5);
             
             string Train = Console.ReadLine();
             
