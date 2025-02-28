@@ -17,9 +17,8 @@ namespace ConsoleApp1.Support
             }
 
             OutPut outPut = new();
-            
-            outPut.mutex = new Mutex();
-            outPut.mutex.WaitOne();
+
+            outPut.OutCollection = new BlockingCollection<(Tensor output, Tensor value)>();
             outPutsBuffer.Enqueue(outPut);
             return outPut;
         }
@@ -39,8 +38,8 @@ namespace ConsoleApp1.Support
             {
                 if (outPutsBuffer.TryDequeue(out OutPut result))
                 {
-                    result.Output = (output[index], value[index]);
-                    result.mutex.ReleaseMutex();
+                    Console.WriteLine(index);
+                    result.OutCollection.TryAdd((output[index], value[index]));
                     index++;
                 }
             }
@@ -51,7 +50,7 @@ namespace ConsoleApp1.Support
 
     public class OutPut
     {
-        public Mutex mutex;
+        public BlockingCollection<(Tensor output, Tensor value)>? OutCollection { get; set; }
         public (Tensor, Tensor) Output;
     }
 }
