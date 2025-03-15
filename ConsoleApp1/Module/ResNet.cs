@@ -25,10 +25,14 @@ namespace Cheese.Module
     }
     internal class ResBlock : Module<Tensor, Tensor>
     {
+        Module<Tensor, Tensor> _Conv2D1;
         Module<Tensor, Tensor> _Conv2D2;
         Module<Tensor, Tensor> _BatchNorm2d2;
+        Module<Tensor, Tensor> _BatchNorm2d1;
         public ResBlock(string name, int in_channel, int out_channel) : base(name)
         {
+            _Conv2D1 = nn.Conv2d(in_channel, out_channel, kernel_size: 3, padding: 1);
+            _BatchNorm2d1 = nn.BatchNorm2d(out_channel);
             _Conv2D2 = nn.Conv2d(in_channel, out_channel, kernel_size: 3, padding: 1);
             _BatchNorm2d2 = nn.BatchNorm2d(out_channel);
             RegisterComponents();

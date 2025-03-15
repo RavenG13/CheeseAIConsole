@@ -48,7 +48,7 @@ namespace ConsoleApp1
         }
         public static void Main(string[] args)
         {
-            Test();
+            //Test();
             ResRollOutAI resRollOutAI = new(RollName);
             resRollOutAI.to(DeviceType.CUDA);
             resRollOutAI.load(RollName + ".dat");
@@ -57,7 +57,7 @@ namespace ConsoleApp1
 
             AITrainer.alphaAI = new("", 15, 7);
             AITrainer.alphaAI.to(DeviceType.CUDA);
-            AITrainer.alphaAI.load("./ModuleSave/1.dat");
+            //AITrainer.alphaAI.load("./ModuleSave/1.dat");
             AITrainer.alphaAI.optimizer = new(AITrainer.alphaAI.parameters(), 5E-5);
             
             string Train = Console.ReadLine();
