@@ -31,7 +31,7 @@ namespace ConsoleApp1.Support
                 input = torch.cat(tensors);
                 tensorsBuffer.Clear();
             }
-
+                
             (Tensor output, Tensor value) = (torch.pow(input,2),torch.ones(new long[] {3,1}));
             int index = 0;
             while (outPutsBuffer.Count != 0)

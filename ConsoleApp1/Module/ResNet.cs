@@ -25,24 +25,19 @@ namespace Cheese.Module
     }
     internal class ResBlock : Module<Tensor, Tensor>
     {
-        Module<Tensor, Tensor> _Conv2D1;
         Module<Tensor, Tensor> _Conv2D2;
-        Module<Tensor, Tensor> _BatchNorm2d1;
         Module<Tensor, Tensor> _BatchNorm2d2;
         public ResBlock(string name,int in_channel,int out_channel) : base(name)
         {
-            _Conv2D1 = nn.Conv2d(in_channel, out_channel, kernel_size: 3, padding: 1);
             _Conv2D2 = nn.Conv2d(in_channel, out_channel, kernel_size: 3, padding: 1);
-            _BatchNorm2d1 = nn.BatchNorm2d(out_channel);
             _BatchNorm2d2 = nn.BatchNorm2d(out_channel);
-
             RegisterComponents();
         }
 
 
         public override Tensor forward(Tensor input)
         {
-            using Tensor out1 = torch.nn.functional.relu(_BatchNorm2d1.forward(_Conv2D1.forward(input)));
+            //using Tensor out1 = torch.nn.functional.relu(_BatchNorm2d1.forward(_Conv2D1.forward(input)));
             using Tensor out2 = _BatchNorm2d2.forward(_Conv2D2.forward(input));
             return torch.nn.functional.relu(input + out2);
         }
@@ -53,17 +48,17 @@ namespace Cheese.Module
         Module<Tensor, Tensor> _ValueHead;
         Module<Tensor, Tensor> _PolicyHead;
         public Adam optimizer;
+        public string name = "ResNet";
         public ResNet(string name,int MatchSize,int in_channel) : base(name)
         {
             var _core = new List<(string,Module<Tensor,Tensor>)>();
-            _core.Add(("InConv", new ConvBlock("Conv1", in_channel, 128, 3, 1)));
-            _core.Add(("Res1", new ResBlock("Res1", 128, 128)));
-            _core.Add(("Res2", new ResBlock("Res2", 128, 128)));
-            _core.Add(("Res3", new ResBlock("Res3", 128, 128)));
+            _core.Add(("InConv", new ConvBlock("Conv1", in_channel, 32, 3, 1)));
+            _core.Add(("Res1", new ResBlock("Res1", 32, 32)));
+            _core.Add(("Res2", new ResBlock("Res2", 32, 32)));
             _Core = nn.Sequential(_core);
 
             var _value = new List<(string, Module<Tensor, Tensor>)>();
-            _value.Add(("ValueConv1", new ConvBlock("ValueConv1", 128, 3, 1)));
+            _value.Add(("ValueConv1", new ConvBlock("ValueConv1", 32, 3, 1)));
             _value.Add(("Flutten", nn.Flatten(1)));
             _value.Add(("lin1", nn.Linear(3 * MatchSize * MatchSize, 256)));
             _value.Add(("relu", nn.ReLU()));
@@ -74,11 +69,9 @@ namespace Cheese.Module
             _ValueHead = nn.Sequential(_value);
 
             var _policy = new List<(string, Module<Tensor, Tensor>)>();
-            _policy.Add(("ConvBlock", new ConvBlock("ConvBlock", 128, 4, 1)));
+            _policy.Add(("ConvBlock", new ConvBlock("ConvBlock", 32, 4, 1)));
             _policy.Add(("Flutten", nn.Flatten(1)));
-            _policy.Add(("Linear1", nn.Linear(4 * MatchSize * MatchSize, 450)));
-            _policy.Add(("relu", nn.ReLU()));
-            _policy.Add(("Linear3", nn.Linear(450, MatchSize * MatchSize)));
+            _policy.Add(("Linear1", nn.Linear(4 * MatchSize * MatchSize, MatchSize * MatchSize)));
             _PolicyHead = nn.Sequential(_policy);
 
             RegisterComponents();

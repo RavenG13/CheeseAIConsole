@@ -105,13 +105,13 @@ public static class AITrainer
         Stopwatch stopwatch = Stopwatch.StartNew();
         Node node = new();
 
+        MCTS mCTS = new MCTS(AITrainer.alphaAI);
         for (int i = 0; i < SIZE*SIZE; i++)
         {
             if (env.IsEnd().Item2 != 2) break;
             Console.Write(n.ToString() + " ");
             n++;
             
-            MCTS mCTS = new MCTS(AITrainer.alphaAI);
             Tensor ActProbs = mCTS.GetNextAction(env, node);
             env.TensorToLearn = ActProbs.detach().clone();
 
@@ -295,6 +295,6 @@ public class DataLoader
         Loss += "\n" + (-entropy / Loss1List.LongCount()).ToString();
         Console.WriteLine(Loss+"\n");
         
-        AITrainer.alphaAI.save("./ModuleSave/1.dat");
+        AITrainer.alphaAI.save($"./ModuleSave/{AITrainer.alphaAI.name}.dat");
     }
 }
