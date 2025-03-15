@@ -12,7 +12,7 @@ namespace Cheese.Module
         Module<Tensor, Tensor> _BatchNorm2d;
         public ConvBlock(string name, int in_channel, int out_channel, int kernel_size, int padding = 0) : base(name)
         {
-            _Conv2D = nn.Conv2d(in_channel, out_channel, kernel_size, padding:padding);
+            _Conv2D = nn.Conv2d(in_channel, out_channel, kernel_size, padding: padding);
             _BatchNorm2d = torch.nn.BatchNorm2d(out_channel);
 
             RegisterComponents();
@@ -27,7 +27,7 @@ namespace Cheese.Module
     {
         Module<Tensor, Tensor> _Conv2D2;
         Module<Tensor, Tensor> _BatchNorm2d2;
-        public ResBlock(string name,int in_channel,int out_channel) : base(name)
+        public ResBlock(string name, int in_channel, int out_channel) : base(name)
         {
             _Conv2D2 = nn.Conv2d(in_channel, out_channel, kernel_size: 3, padding: 1);
             _BatchNorm2d2 = nn.BatchNorm2d(out_channel);
@@ -37,8 +37,8 @@ namespace Cheese.Module
 
         public override Tensor forward(Tensor input)
         {
-            //using Tensor out1 = torch.nn.functional.relu(_BatchNorm2d1.forward(_Conv2D1.forward(input)));
-            using Tensor out2 = _BatchNorm2d2.forward(_Conv2D2.forward(input));
+            using Tensor out1 = torch.nn.functional.relu(_BatchNorm2d1.forward(_Conv2D1.forward(input)));
+            using Tensor out2 = _BatchNorm2d2.forward(_Conv2D2.forward(out1));
             return torch.nn.functional.relu(input + out2);
         }
     }
@@ -49,9 +49,9 @@ namespace Cheese.Module
         Module<Tensor, Tensor> _PolicyHead;
         public Adam optimizer;
         public string name = "ResNet";
-        public ResNet(string name,int MatchSize,int in_channel) : base(name)
+        public ResNet(string name, int MatchSize, int in_channel) : base(name)
         {
-            var _core = new List<(string,Module<Tensor,Tensor>)>();
+            var _core = new List<(string, Module<Tensor, Tensor>)>();
             _core.Add(("InConv", new ConvBlock("Conv1", in_channel, 32, 3, 1)));
             _core.Add(("Res1", new ResBlock("Res1", 32, 32)));
             _core.Add(("Res2", new ResBlock("Res2", 32, 32)));
@@ -100,7 +100,7 @@ namespace Cheese.Module
             core.Add(("Filter", Conv2d(64, 4, 1)));
             core.Add(("Relu", ReLU()));
             core.Add(("Fletten", Flatten()));
-            core.Add(("Linear1", Linear(4* Global.SIZE * Global.SIZE, 512)));
+            core.Add(("Linear1", Linear(4 * Global.SIZE * Global.SIZE, 512)));
             core.Add(("Relu", ReLU()));
             core.Add(("Linear2", Linear(512, Global.SIZE * Global.SIZE)));
             core.Add(("out", LogSoftmax(1)));
@@ -115,5 +115,5 @@ namespace Cheese.Module
             return _Core.forward(input);
         }
     }
-    
+
 }
